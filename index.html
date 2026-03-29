@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRM AI Navigator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="math-tooltip" class="tooltip hidden"></div>
+
+    <aside class="sidebar">
+        <div class="controls">
+            <h2>📍SRM Navigator</h2>
+            <span class="subtitle">Interactive A* Visualizer</span>
+            
+            <div class="input-group">
+                <label>Starting Point</label>
+                <select id="startNode">
+                    <option value="hospital">SRM Hospital</option>
+                    <option value="arch_gate">Arch Gate</option>
+                    <option value="clock_tower">Clock Tower</option>
+                    <option value="auditorium">TP Ganesan Auditorium</option>
+                    <option value="tp_ground">TP Ground</option>
+                    <option value="techpark2">Tech Park 2</option>
+                    <option value="vendhar_sq">Vendhar Sq</option>
+                    <option value="techpark1">Tech Park 1</option>
+                    <option value="java">Java</option>
+                    <option value="bel_block">BEL Block</option>
+                    <option value="girls_hostel">Girls Hostel</option>
+                    <option value="boys_hostel">Boys Hostel</option>
+                    <option value="university_bldg">University Bldg</option>
+                    <option value="sports_complex">Sports Complex</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Destination</label>
+                <select id="endNode">
+                    <option value="arch_gate">Arch Gate</option>
+                    <option value="hospital">SRM Hospital</option>
+                    <option value="clock_tower">Clock Tower</option>
+                    <option value="auditorium">TP Ganesan Auditorium</option>
+                    <option value="tp_ground">TP Ground</option>
+                    <option value="techpark2">Tech Park 2</option>
+                    <option value="vendhar_sq">Vendhar Sq</option>
+                    <option value="techpark1">Tech Park 1</option>
+                    <option value="java">Java</option>
+                    <option value="bel_block">BEL Block</option>
+                    <option value="girls_hostel">Girls Hostel</option>
+                    <option value="boys_hostel">Boys Hostel</option>
+                    <option value="university_bldg">University Bldg</option>
+                    <option value="sports_complex">Sports Complex</option>
+                </select>
+            </div>
+
+            <div class="input-group toggle-group">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="showHeuristic" checked onchange="toggleHeuristic()"> 
+                    Show Heuristic Line (Sightline to Goal)
+                </label>
+            </div>
+
+            <div class="button-row">
+                <button class="btn-main" onclick="runInstantly()">Fast Route</button>
+                <button class="btn-step" onclick="startStepByStep()">Start Steps</button>
+            </div>
+            <div class="button-row">
+                <button class="btn-main" id="btn-next" onclick="nextStep()" disabled style="background: #eab308; color: #000;">Next Step ⏭</button>
+                <button class="btn-reset" onclick="resetMap()">Reset</button>
+            </div>
+
+            <div class="algo-log" id="algo-log">
+                <strong>Status:</strong> Waiting to start...<br>
+                <em>Hover over nodes during execution to see their A* scores!</em>
+            </div>
+
+            <div class="distance-display" id="distance-container">
+                <h3 id="total-distance">Total Distance: 0m</h3>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><span class="dot" style="background: #eab308"></span><span>Open Set (Considering)</span></div>
+            <div class="legend-item"><span class="dot" style="background: #64748b"></span><span>Closed Set (Evaluated)</span></div>
+            <div class="legend-item"><span class="dot path-dot"></span><span>Final Path</span></div>
+        </div>
+    </aside>
+
+    <main class="map-container">
+        <svg viewBox="0 0 1500 1800" preserveAspectRatio="xMidYMid meet" id="campus-map">
+            <line id="heuristic-line" x1="0" y1="0" x2="0" y2="0" stroke="#f59e0b" stroke-width="6" stroke-dasharray="10,10" style="display: none; opacity: 0.6;" />
+
+            <line class="path" x1="750" y1="100" x2="750" y2="750" id="hosp-to-clock" />
+            <line class="path" x1="750" y1="750" x2="750" y2="900" id="clock-to-sjava" />
+            <line class="path" x1="750" y1="900" x2="750" y2="1100" id="sjava-to-sbel" />
+            <line class="path" x1="750" y1="1100" x2="750" y2="1350" id="sbel-to-sboys" />
+            <line class="path" x1="750" y1="1350" x2="750" y2="1550" id="sboys-to-gate" />
+
+            <line class="path" x1="300" y1="300" x2="300" y2="450" id="audi-to-tp2" />
+            <line class="path" x1="300" y1="450" x2="300" y2="700" id="tp2-to-tp1" />
+            <line class="path" x1="300" y1="700" x2="300" y2="900" id="tp1-to-java" />
+            <line class="path" x1="300" y1="900" x2="300" y2="1100" id="java-to-bel" />
+
+            <line class="path" x1="300" y1="300" x2="750" y2="100" id="auditorium-hosp" />
+            <line class="path" x1="550" y1="300" x2="300" y2="300" id="tpg-to-audi" />
+            <line class="path" x1="550" y1="300" x2="550" y2="550" id="tpg-to-vendhar" />
+            <line class="path" x1="300" y1="450" x2="550" y2="550" id="tp2-to-vendhar" />
+            <line class="path" x1="300" y1="700" x2="550" y2="550" id="tp1-to-vendhar" />
+            <line class="path" x1="550" y1="550" x2="750" y2="750" id="vendhar-to-clock" />
+            <line class="path" x1="300" y1="900" x2="750" y2="900" id="java-to-spine" />
+            <line class="path" x1="300" y1="1100" x2="750" y2="1100" id="bel-to-spine" />
+            <line class="path" x1="1250" y1="750" x2="750" y2="750" id="girls-to-clock" />
+            <line class="path" x1="1250" y1="1350" x2="750" y2="1350" id="boys-to-spine" />
+            <line class="path" x1="400" y1="1350" x2="550" y2="1350" id="sports-to-uni" />
+            <line class="path" x1="550" y1="1350" x2="750" y2="1350" id="uni-to-spine" />
+            
+            <g class="node" id="hospital"><circle cx="750" cy="100" r="35"/><text x="750" y="50">SRM Hospital</text></g>
+            <g class="node" id="clock_tower"><circle cx="750" cy="750" r="50"/><text x="750" y="840">Clock Tower</text></g>
+            <g class="node goal-node" id="arch_gate"><circle cx="750" cy="1550" r="60"/><text x="750" y="1650">Arch Gate</text></g>
+
+            <g class="node" id="auditorium"><circle cx="300" cy="300" r="25"/><text x="180" y="305">Auditorium</text></g>
+            <g class="node" id="tp_ground"><circle cx="550" cy="300" r="25"/><text x="550" y="260">TP Ground</text></g>
+            <g class="node" id="vendhar_sq"><circle cx="550" cy="550" r="25"/><text x="470" y="555">Vendhar Sq</text></g>
+            
+            <g class="node" id="techpark2"><circle cx="300" cy="450" r="25"/><text x="180" y="455">Tech Park 2</text></g>
+            <g class="node" id="techpark1"><circle cx="300" cy="700" r="25"/><text x="180" y="705">Tech Park 1</text></g>
+            <g class="node" id="java"><circle cx="300" cy="900" r="25"/><text x="180" y="905">Java</text></g>
+            <g class="node" id="bel_block"><circle cx="300" cy="1100" r="25"/><text x="180" y="1105">BEL Block</text></g>
+
+            <g class="node" id="girls_hostel"><circle cx="1250" cy="750" r="25"/><text x="1370" y="755">Girls Hostel</text></g>
+            <g class="node" id="boys_hostel"><circle cx="1250" cy="1350" r="25"/><text x="1370" y="1355">Boys Hostel</text></g>
+
+            <g class="node" id="university_bldg"><circle cx="550" cy="1350" r="30"/><text x="550" y="1420">University Bldg</text></g>
+            <g class="node" id="sports_complex"><circle cx="400" cy="1350" r="25"/><text x="300" y="1355">Sports Complex</text></g>
+        </svg>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
